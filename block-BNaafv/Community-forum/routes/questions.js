@@ -228,7 +228,7 @@ router.get('/tags',async function(req,res,next){
             res.json({msg:"No tags available"});
         }
        
-        res.json({tags:tags})
+       
 
         
     } catch (error) {
