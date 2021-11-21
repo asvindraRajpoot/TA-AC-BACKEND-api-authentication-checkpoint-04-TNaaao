@@ -63,21 +63,21 @@ router.put('/:questionId',auth.verifyToken,async function(req,res,next){
 router.delete('/:slug',auth.verifyToken,async function(req,res,next){
     const slug=req.params.slug;
     try {
-        const question=await Question.findOne({slug:slug});
-        if(question){
-           if(question.answers.length!==0){
-            question.answers.forEach(answer=>{
-                const deletedAnswer= Answer.findByIdAndDelete(answer,{upsert:true});
-                
-            })
-
-           }else{
-               const deletedQuestion=await Question.findByIdAndDelete(question._id,{upsert:true})
-               res.json({question:deletedQuestion})
-           }
-        }else{
-            res.json({msg:"Question does not exist"});
-        }
+        const deletedQuestion=await Question.findOneAndDelete({slug:slug});
+        if(deletedQuestion){
+            const answers=await Answer.deleteMany({questionId:deletedQuestion._id})
+            if(answers.length!==0){
+                res.json({question:deletedQuestion})
+            }else{
+                res.json({msg:"answers are not available"})
+            }
+              
+              
+               
+         }else{
+             res.json({msg:"No Question is available"});
+         }
+        
         
     } catch (error) {
         next(error)
@@ -190,10 +190,22 @@ router.delete('/answers/:answerId',auth.verifyToken,async function(req,res,next)
     //console.log(id);
     try {
         const deletedAnswer= await Answer.findByIdAndDelete(answerId)
+        //console.log('deleted answer',deletedAnswer);
          if(deletedAnswer){
-             res.json({question:deletedAnswer})
+            const question=await Question.findOneAndUpdate(
+                {_id:deletedAnswer.questionId},
+                {$pull:{answers:deletedAnswer._id}},
+                {new:true},
+                )
+                if(question){
+                    console.log('deleted answer:',deletedAnswer,'updated question:',question);
+                    res.json({answer:deletedAnswer})
+                }else{
+                    res.json({msg:"Please try again"})
+                }
+               
          }else{
-             res.json({msg:"answer is not available"});
+             res.json({msg:"No answer is available"});
          }
        
        
