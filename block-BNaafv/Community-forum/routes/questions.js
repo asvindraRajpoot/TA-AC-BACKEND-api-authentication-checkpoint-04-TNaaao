@@ -4,6 +4,7 @@ var User = require('../models/user');
 var auth = require('../middelwares/auth');
 var Question=require('../models/question');
 var Answer=require('../models/answer');
+var mongoose=require('mongoose')
 
 
 //post request on /questions //create a question
@@ -112,11 +113,120 @@ router.post('/:questionId/answers',auth.verifyToken,async function(req,res,next)
 })
 
 
+//add answer POST request on /questions/:questionId/answers
+router.post('/:questionId/answers',auth.verifyToken,async function(req,res,next){
+    const questionId=req.params.questionId;
+    req.body.questionId=questionId;
+    req.body.author=req.user.userId;
+    try {
+        const answer=await Answer.create(req.body);
+        if(answer){
+            res.json({answer:answer})
+        }else{
+            res.json({msg:"Answer is not created"});
+        }
+
+        
+    } catch (error) {
+        next(error);
+    }
+})
 
 
+//list all answers GET request on /questions/:questionId/answers
+router.get('/:questionId/answers',auth.verifyToken,async function(req,res,next){
+    const questionId=req.params.questionId;
+    let answers=[];
+    try {
+         Question.findById(questionId).populate('answers').exec((err,question)=>{
+             console.log(err,question);
+             if(question){
+                if(question.answers.length!==0){
+                    res.json({answers:question.answers})
+                }else{
+
+                    res.json({msg:"no answers available"});
+                }
+             }else{
+                 res.json({msg:"question is not there"})
+             }
+           
+         })
 
 
+        
+    } catch (error) {
+        next(error)
+        
+    }
+})
 
+
+//update the answer handle request on pathname -> /answers/:answerId
+router.put('/answers/:answerId',auth.verifyToken,async function(req,res,next){
+    const answerId=req.params.answerId;
+    console.log(req.body);
+    try {
+        const answer=await Answer.findById(answerId);
+        answer.text=req.body.text;
+        answer.save();
+        if(answer){
+            res.json({answer:answer});
+        }else{
+            res.json({msg:"answer is not updated"});
+        }
+
+        
+    } catch (error) {
+        next(error)
+        
+    }
+})
+
+//delete and answer DELETE /answers/:answerId
+router.delete('/answers/:answerId',auth.verifyToken,async function(req,res,next){
+    const answerId=req.params.answerId;
+    var id=mongoose.Types.ObjectId(answerId);
+    //console.log(id);
+    try {
+        const deletedAnswer= await Answer.findByIdAndDelete(answerId)
+         if(deletedAnswer){
+             res.json({question:deletedAnswer})
+         }else{
+             res.json({msg:"answer is not available"});
+         }
+       
+       
+        
+    } catch (error) {
+        next(error);
+        
+    }
+})
+
+
+//GET request on /tags get request
+router.get('/tags',async function(req,res,next){
+    var tags=[]
+    try {
+        const questions=await Question.find({});
+        questions.forEach((ques)=>{
+            if(ques.length){
+                ques.forEach((t)=>{
+                    if(!tags.includes(t)){
+                        tags.push(t);
+                    }
+                })
+            }
+        })
+        res.json({tags:tags})
+
+        
+    } catch (error) {
+        next(error)
+        
+    }
+})
 
 
 
