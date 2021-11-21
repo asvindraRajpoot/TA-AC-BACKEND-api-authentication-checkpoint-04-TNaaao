@@ -219,18 +219,15 @@ router.delete('/answers/:answerId',auth.verifyToken,async function(req,res,next)
 
 //GET request on /tags get request
 router.get('/tags',async function(req,res,next){
-    var tags=[]
+  
     try {
-        const questions=await Question.find({});
-        questions.forEach((ques)=>{
-            if(ques.length){
-                ques.forEach((t)=>{
-                    if(!tags.includes(t)){
-                        tags.push(t);
-                    }
-                })
-            }
-        })
+        const tags=await Question.distinct("tags");
+        if(tags.length!==0){
+            res.json({tags:tags});
+        }else{
+            res.json({msg:"No tags available"});
+        }
+       
         res.json({tags:tags})
 
         
